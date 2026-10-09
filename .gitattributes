@@ -1,0 +1,5 @@
+src/ros2_livox_simulation/scan_mode/*.csv -text -diff
+*.obj -text
+*.dae -text
+*.stl -text
+*.bt binary

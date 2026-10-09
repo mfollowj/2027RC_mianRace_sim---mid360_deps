@@ -98,6 +98,19 @@ ros2 launch <仿真包> slam.launch.py   gui:=true   # 2D 建图（只需 Mid-36
 `ros2_livox_simulation`（插件）两者是**必需**的 —— 仿真雷达的话题类型就是
 `livox_ros_driver2/msg/CustomMsg`。
 
+### 可以贴到仿真仓库 README 里的三行
+
+```bash
+git clone https://github.com/mfollowj/2027RC_mianRace_sim_deps.git ~/rc_deps
+cd ~/rc_deps && ./scripts/install_livox_sdk2.sh && ./build.sh     # 首次需 sudo 装 SDK2
+source ~/rc_deps/install/setup.bash                               # 再 source 仿真工作空间
+```
+
+> 若你的仿真工作空间是**在 source 过别的第三方工作空间的情况下**编译的，
+> 它自己的 `install/setup.bash` 会在 source 时把那些"父工作空间"一起带进来，
+> 可能出现同名包被覆盖的告警。此时把本依赖仓库放在**最后** source 即可（后者优先），
+> 或干脆重新 `colcon build` 一次。
+
 ---
 
 ## 四、本地改动说明（相对上游）
