@@ -3,8 +3,7 @@
 本仓库是 [`2027RC_mianRace_sim---mid360`](https://github.com/mfollowj/2027RC_mianRace_sim---mid360)
 仿真工程的**外部依赖补齐包**。
 
-那套仿真代码本身只包含"场地 + 小车 + 建图/导航配置"，而其中三处关键能力来自
-**rosdep 里找不到（无法 `rosdep install` 自动装）、只能从源码编译**的第三方包：
+
 
 1. **Mid-360 在 Gazebo 里的仿真**（`libros2_livox.so` 插件 + 真实扫描花样 `mid360.csv`）；
 2. **Livox 自定义消息 `livox_ros_driver2/msg/CustomMsg`**（仿真雷达与 LIO 都靠它通信）；
@@ -190,15 +189,4 @@ vcs import src < deps.repos
     └── my_gazebo_plugins/       # 可选 planar_move 变体
 ```
 
-## 九、快照信息与验证状态
 
-* 导出日期：2026-10；导出环境：Ubuntu 22.04 + ROS 2 Humble + Gazebo Classic 11.10.2
-* **已实测**：`./build.sh` 在本机 **4 个包全部编译通过（约 70 秒，24 核）**：
-  `livox_ros_driver2`、`ros2_livox_simulation`、`fast_lio`、`my_gazebo_plugins`；
-  产出 `install/ros2_livox_simulation/lib/libros2_livox.so`、
-  `install/my_gazebo_plugins/lib/libcmd_vel_z_plugin.so` 等。
-  （各包 stderr 里有一些 Boost/编译告警，属正常。）
-* 仿真侧此前已实测：`lio_map.launch.py`（3D，FAST-LIO + Mid-360 插件）与 `slam.launch.py`（2D）
-  均可启动建图，话题 `/livox/lidar`(`CustomMsg`)、`/livox/imu`、`/Odometry`、`/Laser_map` 正常。
-* 从零复现所需的三步：① `sudo apt install ros-humble-gazebo-ros-pkgs ros-humble-pcl-ros ros-humble-tf2-ros`；
-  ② `./scripts/install_livox_sdk2.sh`；③ `./build.sh`。
