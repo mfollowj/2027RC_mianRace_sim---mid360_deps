@@ -28,7 +28,23 @@
 
 ---
 
-## 二、编译
+## 二、不需要放进本仓库的依赖（用 apt / rosdep 装）
+
+以下都是 rosdep 可解析的标准包，**不在本仓库内**：
+
+```bash
+sudo apt install \
+  ros-humble-gazebo-ros-pkgs ros-humble-gazebo-plugins \
+  ros-humble-xacro ros-humble-robot-state-publisher ros-humble-joint-state-publisher \
+  ros-humble-pointcloud-to-laserscan ros-humble-pcl-ros \
+  ros-humble-slam-toolbox ros-humble-nav2-bringup ros-humble-nav2-* \
+  ros-humble-octomap-server ros-humble-octomap-msgs ros-humble-octomap-rviz-plugins \
+  ros-humble-joy ros-humble-teleop-twist-joy ros-humble-teleop-twist-keyboard \
+  ros-humble-rviz2 ros-humble-tf2-ros ros-humble-sensor-msgs-py
+```
+
+
+## 三、编译
 
 本仓库本身就是标准的 colcon 工作空间布局（`src/` 下放包）。
 
@@ -81,7 +97,7 @@ ls $(ros2 pkg prefix ros2_livox_simulation)/share/ros2_livox_simulation/scan_mod
 
 ---
 
-## 三、与仿真仓库配合使用
+## 四、与仿真仓库配合使用
 
 ```bash
 # 终端里 source 顺序：ROS → 本依赖工作空间 → 仿真仓库工作空间
@@ -112,7 +128,7 @@ source ~/rc_deps/install/setup.bash                               # 再 source �
 
 ---
 
-## 四、本地改动说明（相对上游）
+## 五、本地改动说明（相对上游）
 
 这些包是为本项目的 Mid-360 仿真就地调过的，**不是上游原封拷贝**：
 
@@ -134,20 +150,6 @@ source ~/rc_deps/install/setup.bash                               # 再 source �
 
 ---
 
-## 五、不需要放进本仓库的依赖（用 apt / rosdep 装）
-
-以下都是 rosdep 可解析的标准包，**不在本仓库内**：
-
-```bash
-sudo apt install \
-  ros-humble-gazebo-ros-pkgs ros-humble-gazebo-plugins \
-  ros-humble-xacro ros-humble-robot-state-publisher ros-humble-joint-state-publisher \
-  ros-humble-pointcloud-to-laserscan ros-humble-pcl-ros \
-  ros-humble-slam-toolbox ros-humble-nav2-bringup ros-humble-nav2-* \
-  ros-humble-octomap-server ros-humble-octomap-msgs ros-humble-octomap-rviz-plugins \
-  ros-humble-joy ros-humble-teleop-twist-joy ros-humble-teleop-twist-keyboard \
-  ros-humble-rviz2 ros-humble-tf2-ros ros-humble-sensor-msgs-py
-```
 
 ---
 
