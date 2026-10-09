@@ -22,6 +22,7 @@
 | [`src/livox_ros_driver2`](src/livox_ros_driver2) | `livox_ros_driver2` | **消息定义**（`CustomMsg`/`CustomPoint`）＋真实雷达驱动。仿真只需其消息，但消息与驱动同包，一起编译最省事；自带 Livox SDK（`3rdparty/`） | [Livox-SDK/livox_ros_driver2](https://github.com/Livox-SDK/livox_ros_driver2) | MIT |
 | [`src/fast_lio`](src/fast_lio) | `fast_lio` | **3D 建图 + 抗丢定位**：吃 `/livox/lidar` + `/livox/imu` 做 LiDAR-惯性紧耦合里程计，输出 `/Odometry`、`odom→base_link`、`/Laser_map`、`/cloud_registered` | ROS 2 分支由 [Ericsii](https://github.com/Ericsii/FAST_LIO) 维护，原始算法 [hku-mars/FAST_LIO](https://github.com/hku-mars/FAST_LIO) | **GPL-2.0**（注意：其 `package.xml` 里写的是 BSD，实际 LICENSE 文件是 GPLv2） |
 | [`src/my_gazebo_plugins`](src/my_gazebo_plugins) | `my_gazebo_plugins` | **可选**：`libcmd_vel_z_plugin.so`，即"支持 `linear.z` 的 planar_move"变体（源自 `gazebo_ros_pkgs` 的 `gazebo_ros_planar_move`）。本项目仿真默认用 `libgazebo_ros_planar_move.so`，**不装也能跑** | 本地修改版，衍生自 `gazebo_ros_pkgs`（BSD-3-Clause / Apache-2.0） | 见上游 gazebo_ros_pkgs |
+| [`thirdparty/Livox-SDK2`](thirdparty/Livox-SDK2) | （不是 ROS 包） | **`livox_ros_driver2` 的编译前置**：其 `CMakeLists.txt` 里写死 `find_library(... /usr/local/lib REQUIRED)` 找 `liblivox_lidar_sdk_shared.so`，所以必须先装 SDK2 到 `/usr/local` | [Livox-SDK/Livox-SDK2](https://github.com/Livox-SDK/Livox-SDK2)（本地快照，已剔除 build 产物：126 MB → 2.5 MB） | MIT |
 
 > 与仿真仓库的对应关系（实测引用点）：`ros2_livox_simulation` 7 处、`fast_lio` 5 处、
 > `livox_ros_driver2` 4 处。`my_gazebo_plugins` 未被引用，属于备选。
@@ -30,25 +31,49 @@
 
 ## 二、编译
 
-本仓库本身就是标准的 colcon 工作空间布局（`src/` 下放包）：
+本仓库本身就是标准的 colcon 工作空间布局（`src/` 下放包）。
+
+### 第一步：装 Livox SDK2（必须，且需要 sudo）
 
 ```bash
-sudo apt install ros-humble-gazebo-ros-pkgs ros-humble-pcl-ros ros-humble-tf2-ros   # 编译期依赖
-mkdir -p ~/rc_deps_ws/src && cp -r src/* ~/rc_deps_ws/src/     # 也可以直接在本仓库根目录 build
-cd ~/rc_deps_ws
-colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+./scripts/install_livox_sdk2.sh          # cmake + make + sudo make install 到 /usr/local
+# 装好后应存在：/usr/local/lib/liblivox_lidar_sdk_shared.so
+```
+
+### 第二步：一键编译
+
+```bash
+./build.sh
+```
+
+`build.sh` 实际等价于：
+
+```bash
+source /opt/ros/humble/setup.bash
+colcon build --symlink-install --parallel-workers $(nproc) \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release -DHUMBLE_ROS=humble
 source install/setup.bash
 ```
 
-编译顺序会由 colcon 自动处理（`ros2_livox_simulation` 依赖 `livox_ros_driver2` 的消息）。
-`fast_lio` 体积大是因为上游 `doc/`（约 128 MB 文档），本仓库已剔除；同时去掉了运行日志 `Log/`。
+> ⚠️ **最容易卡住的一步：`-DHUMBLE_ROS=humble` 不能省。**
+> `livox_ros_driver2` 的 CMakeLists 用 `if(HUMBLE_ROS STREQUAL "humble")` 选择 ROS 2 分支，
+> 而这个变量在文件里**从未被赋值**，只能从命令行传。不加它就会走老的 `else()` 分支并报：
+>
+> ```
+> CMake Error: The following variables are used in this project, but they are set to NOTFOUND.
+>   .../livox_ros_driver2/LIVOX_INTERFACES_INCLUDE_DIRECTORIES
+> ```
+>
+> （原工作空间的 `build.sh` 里也有同样注释，说明这个坑踩过。）
+
+编译期依赖（apt）：`ros-humble-gazebo-ros-pkgs ros-humble-pcl-ros ros-humble-tf2-ros`。
 
 单个包自检：
 
 ```bash
 ros2 pkg prefix livox_ros_driver2 ros2_livox_simulation fast_lio   # 三个都要能定位到
-ls $(ros2 pkg prefix ros2_livox_simulation)/share/ros2_livox_simulation/scan_mode/mid360.csv
 ls $(ros2 pkg prefix ros2_livox_simulation)/lib/libros2_livox.so
+ls $(ros2 pkg prefix ros2_livox_simulation)/share/ros2_livox_simulation/scan_mode/mid360.csv
 ```
 
 > `mid360.csv` 由插件在启动时读取，路径写在各包的 xacro 里
@@ -137,9 +162,30 @@ vcs import src < deps.repos
 
 ---
 
-## 八、快照信息
+## 八、目录结构
 
-* 导出日期：2026-10
-* 导出环境：Ubuntu 22.04 + ROS 2 Humble + Gazebo Classic 11.10.2
-* 已验证：`colcon build` 通过；仿真侧 `lio_map.launch.py`（3D）与 `slam.launch.py`（2D）
-  均可正常启动建图，话题 `/livox/lidar`(`CustomMsg`)、`/livox/imu`、`/Odometry`、`/Laser_map` 正常。
+```
+2027RC_mianRace_sim_deps/
+├── build.sh                     # 一键编译（已含 -DHUMBLE_ROS=humble）
+├── scripts/install_livox_sdk2.sh# 装 Livox SDK2 到 /usr/local（需 sudo）
+├── deps.repos                   # 可选：用 vcstool 从上游拉取
+├── thirdparty/Livox-SDK2/       # SDK2 源码快照（MIT，2.5 MB）
+└── src/
+    ├── livox_ros_driver2/       # 消息 + 驱动（MIT）
+    ├── ros2_livox_simulation/   # Mid-360 仿真插件 + mid360.csv（MIT）
+    ├── fast_lio/                # FAST-LIO2 3D 建图（GPL-2.0）
+    └── my_gazebo_plugins/       # 可选 planar_move 变体
+```
+
+## 九、快照信息与验证状态
+
+* 导出日期：2026-10；导出环境：Ubuntu 22.04 + ROS 2 Humble + Gazebo Classic 11.10.2
+* **已实测**：`./build.sh` 在本机 **4 个包全部编译通过（约 70 秒，24 核）**：
+  `livox_ros_driver2`、`ros2_livox_simulation`、`fast_lio`、`my_gazebo_plugins`；
+  产出 `install/ros2_livox_simulation/lib/libros2_livox.so`、
+  `install/my_gazebo_plugins/lib/libcmd_vel_z_plugin.so` 等。
+  （各包 stderr 里有一些 Boost/编译告警，属正常。）
+* 仿真侧此前已实测：`lio_map.launch.py`（3D，FAST-LIO + Mid-360 插件）与 `slam.launch.py`（2D）
+  均可启动建图，话题 `/livox/lidar`(`CustomMsg`)、`/livox/imu`、`/Odometry`、`/Laser_map` 正常。
+* 从零复现所需的三步：① `sudo apt install ros-humble-gazebo-ros-pkgs ros-humble-pcl-ros ros-humble-tf2-ros`；
+  ② `./scripts/install_livox_sdk2.sh`；③ `./build.sh`。
