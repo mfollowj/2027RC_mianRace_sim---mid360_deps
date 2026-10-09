@@ -1,0 +1,12 @@
+# 用 vcstool 从上游拉取（可选）：vcs import src < deps.repos
+# 注意：上游不含 README 第四节列出的本地适配改动。
+repositories:
+  livox_ros_driver2:
+    type: git
+    url: https://github.com/Livox-SDK/livox_ros_driver2.git
+  ros2_livox_simulation:
+    type: git
+    url: https://github.com/stm32f303ret6/livox_laser_simulation_RO2.git
+  fast_lio:
+    type: git
+    url: https://github.com/Ericsii/FAST_LIO.git
